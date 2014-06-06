@@ -105,16 +105,20 @@ void test_network_remote_local__nested_tags_are_completely_peeled(void)
 
 void test_network_remote_local__shorthand_fetch_refspec0(void)
 {
-	const char *refspec = "master:remotes/sloppy/master";
-	const char *refspec2 = "master:boh/sloppy/master";
+	char *refspec_strings[] = {
+		"master:remotes/sloppy/master",
+		"master:boh/sloppy/master",
+	};
+	git_strarray array = {
+		refspec_strings,
+		2,
+	};
 
 	git_reference *ref;
 
 	connect_to_local_repository(cl_fixture("testrepo.git"));
-	cl_git_pass(git_remote_add_fetch(remote, refspec));
-	cl_git_pass(git_remote_add_fetch(remote, refspec2));
 
-	cl_git_pass(git_remote_download(remote, NULL));
+	cl_git_pass(git_remote_download(remote, &array));
 	cl_git_pass(git_remote_update_tips(remote, NULL, NULL));
 
 	cl_git_pass(git_reference_lookup(&ref, repo, "refs/remotes/sloppy/master"));
@@ -126,17 +130,21 @@ void test_network_remote_local__shorthand_fetch_refspec0(void)
 
 void test_network_remote_local__shorthand_fetch_refspec1(void)
 {
-	const char *refspec = "master";
-	const char *refspec2 = "hard_tag";
+	char *refspec_strings[] = {
+		"master",
+		"hard_tag",
+	};
+	git_strarray array = {
+		refspec_strings,
+		2,
+	};
 
 	git_reference *ref;
 
 	connect_to_local_repository(cl_fixture("testrepo.git"));
 	git_remote_clear_refspecs(remote);
-	cl_git_pass(git_remote_add_fetch(remote, refspec));
-	cl_git_pass(git_remote_add_fetch(remote, refspec2));
 
-	cl_git_pass(git_remote_download(remote, NULL));
+	cl_git_pass(git_remote_download(remote, &array));
 	cl_git_pass(git_remote_update_tips(remote, NULL, NULL));
 
 	cl_git_fail(git_reference_lookup(&ref, repo, "refs/remotes/master"));
@@ -163,14 +171,20 @@ void test_network_remote_local__tagopt(void)
 
 void test_network_remote_local__push_to_bare_remote(void)
 {
+	char *refspec_strings[] = {
+		"master:master",
+	};
+	git_strarray array = {
+		refspec_strings,
+		1,
+	};
 	/* Should be able to push to a bare remote */
 	git_remote *localremote;
 	git_push *push;
 
 	/* Get some commits */
 	connect_to_local_repository(cl_fixture("testrepo.git"));
-	cl_git_pass(git_remote_add_fetch(remote, "master:master"));
-	cl_git_pass(git_remote_download(remote, NULL));
+	cl_git_pass(git_remote_download(remote, &array));
 	cl_git_pass(git_remote_update_tips(remote, NULL, NULL));
 	git_remote_disconnect(remote);
 
@@ -199,6 +213,13 @@ void test_network_remote_local__push_to_bare_remote(void)
 
 void test_network_remote_local__push_to_bare_remote_with_file_url(void)
 {
+	char *refspec_strings[] = {
+		"master:master",
+	};
+	git_strarray array = {
+		refspec_strings,
+		1,
+	};
 	/* Should be able to push to a bare remote */
 	git_remote *localremote;
 	git_push *push;
@@ -206,8 +227,7 @@ void test_network_remote_local__push_to_bare_remote_with_file_url(void)
 
 	/* Get some commits */
 	connect_to_local_repository(cl_fixture("testrepo.git"));
-	cl_git_pass(git_remote_add_fetch(remote, "master:master"));
-	cl_git_pass(git_remote_download(remote, NULL));
+	cl_git_pass(git_remote_download(remote, &array));
 	cl_git_pass(git_remote_update_tips(remote, NULL, NULL));
 	git_remote_disconnect(remote);
 
@@ -240,14 +260,20 @@ void test_network_remote_local__push_to_bare_remote_with_file_url(void)
 
 void test_network_remote_local__push_to_non_bare_remote(void)
 {
+	char *refspec_strings[] = {
+		"master:master",
+	};
+	git_strarray array = {
+		refspec_strings,
+		1,
+	};
 	/* Shouldn't be able to push to a non-bare remote */
 	git_remote *localremote;
 	git_push *push;
 
 	/* Get some commits */
 	connect_to_local_repository(cl_fixture("testrepo.git"));
-	cl_git_pass(git_remote_add_fetch(remote, "master:master"));
-	cl_git_pass(git_remote_download(remote, NULL));
+	cl_git_pass(git_remote_download(remote, &array));
 	cl_git_pass(git_remote_update_tips(remote, NULL, NULL));
 	git_remote_disconnect(remote);
 
@@ -276,7 +302,13 @@ void test_network_remote_local__push_to_non_bare_remote(void)
 
 void test_network_remote_local__fetch(void)
 {
-	const char *refspec = "master:remotes/sloppy/master";
+	char *refspec_strings[] = {
+		"master:remotes/sloppy/master",
+	};
+	git_strarray array = {
+		refspec_strings,
+		1,
+	};
 
 	git_reflog *log;
 	const git_reflog_entry *entry;
@@ -286,9 +318,8 @@ void test_network_remote_local__fetch(void)
 	cl_git_pass(git_signature_now(&sig, "Foo Bar", "foo@example.com"));
 
 	connect_to_local_repository(cl_fixture("testrepo.git"));
-	cl_git_pass(git_remote_add_fetch(remote, refspec));
 
-	cl_git_pass(git_remote_fetch(remote, NULL, sig, "UPDAAAAAATE!!"));
+	cl_git_pass(git_remote_fetch(remote, &array, sig, "UPDAAAAAATE!!"));
 
 	cl_git_pass(git_reference_lookup(&ref, repo, "refs/remotes/sloppy/master"));
 	git_reference_free(ref);
@@ -305,7 +336,13 @@ void test_network_remote_local__fetch(void)
 
 void test_network_remote_local__reflog(void)
 {
-	const char *refspec = "master:remotes/sloppy/master";
+	char *refspec_strings[] = {
+		"master:remotes/sloppy/master",
+	};
+	git_strarray array = {
+		refspec_strings,
+		1,
+	};
 
 	git_reflog *log;
 	const git_reflog_entry *entry;
@@ -314,9 +351,8 @@ void test_network_remote_local__reflog(void)
 	cl_git_pass(git_signature_now(&sig, "Foo Bar", "foo@example.com"));
 
 	connect_to_local_repository(cl_fixture("testrepo.git"));
-	cl_git_pass(git_remote_add_fetch(remote, refspec));
 
-	cl_git_pass(git_remote_download(remote, NULL));
+	cl_git_pass(git_remote_download(remote, &array));
 	cl_git_pass(git_remote_update_tips(remote, sig, "UPDAAAAAATE!!"));
 
 	cl_git_pass(git_reflog_read(&log, repo, "refs/remotes/sloppy/master"));
@@ -331,7 +367,13 @@ void test_network_remote_local__reflog(void)
 
 void test_network_remote_local__fetch_default_reflog_message(void)
 {
-	const char *refspec = "master:remotes/sloppy/master";
+	char *refspec_strings[] = {
+		"master:remotes/sloppy/master",
+	};
+	git_strarray array = {
+		refspec_strings,
+		1,
+	};
 
 	git_reflog *log;
 	const git_reflog_entry *entry;
@@ -341,9 +383,8 @@ void test_network_remote_local__fetch_default_reflog_message(void)
 	cl_git_pass(git_signature_now(&sig, "Foo Bar", "foo@example.com"));
 
 	connect_to_local_repository(cl_fixture("testrepo.git"));
-	cl_git_pass(git_remote_add_fetch(remote, refspec));
 
-	cl_git_pass(git_remote_fetch(remote, NULL, sig, NULL));
+	cl_git_pass(git_remote_fetch(remote, &array, sig, NULL));
 
 	cl_git_pass(git_reflog_read(&log, repo, "refs/remotes/sloppy/master"));
 	cl_assert_equal_i(1, git_reflog_entrycount(log));
