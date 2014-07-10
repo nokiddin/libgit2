@@ -9,6 +9,7 @@
 #define INCLUDE_tree_cache_h__
 
 #include "common.h"
+#include "pool.h"
 #include "git2/oid.h"
 
 struct git_tree_cache {
@@ -24,10 +25,10 @@ struct git_tree_cache {
 
 typedef struct git_tree_cache git_tree_cache;
 
-int git_tree_cache_read(git_tree_cache **tree, const char *buffer, size_t buffer_size);
+int git_tree_cache_read(git_tree_cache **tree, const char *buffer, size_t buffer_size, git_pool *pool);
 void git_tree_cache_invalidate_path(git_tree_cache *tree, const char *path);
 const git_tree_cache *git_tree_cache_get(const git_tree_cache *tree, const char *path);
-int git_tree_cache_new(git_tree_cache **out, const char *name, git_tree_cache *parent);
+int git_tree_cache_new(git_tree_cache **out, const char *name, git_tree_cache *parent, git_pool *pool);
 void git_tree_cache_free(git_tree_cache *tree);
 
 #endif
