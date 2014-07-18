@@ -10,8 +10,10 @@
 #include "common.h"
 #include "types.h"
 #include "oid.h"
+#include "oidarray.h"
 #include "checkout.h"
 #include "index.h"
+
 
 /**
  * @file git2/merge.h
@@ -316,6 +318,21 @@ GIT_EXTERN(int) git_merge_analysis(
  */
 GIT_EXTERN(int) git_merge_base(
 	git_oid *out,
+	git_repository *repo,
+	const git_oid *one,
+	const git_oid *two);
+
+/**
+ * Find merge bases between two commits
+ *
+ * @param out array in which to store the resulting ids
+ * @param repo the repository where the commits exist
+ * @param one one of the commits
+ * @param two the other commit
+ * @return 0 on success, GIT_ENOTFOUND if not found or error code
+ */
+GIT_EXTERN(int) git_merge_bases(
+	git_oidarray *out,
 	git_repository *repo,
 	const git_oid *one,
 	const git_oid *two);
