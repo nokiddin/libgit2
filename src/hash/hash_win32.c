@@ -4,6 +4,7 @@
  * This file is part of libgit2, distributed under the GNU GPL v2 with
  * a Linking Exception. For full terms see the included COPYING file.
  */
+#ifdef WIN32
 
 #include "common.h"
 #include "global.h"
@@ -274,3 +275,4 @@ void git_hash_ctx_cleanup(git_hash_ctx *ctx)
 	else if(ctx->type == CRYPTOAPI)
 		hash_ctx_cryptoapi_cleanup(ctx);
 }
+#endif
