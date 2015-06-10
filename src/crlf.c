@@ -302,7 +302,7 @@ static int crlf_check(
 			return error;
 
 		/* downgrade FAIL to WARN if ALLOW_UNSAFE option is used */
-		if ((git_filter_source_options(src) & GIT_FILTER_OPT_ALLOW_UNSAFE) &&
+		if ((git_filter_source_flags(src) & GIT_FILTER_ALLOW_UNSAFE) &&
 			ca.safe_crlf == GIT_SAFE_CRLF_FAIL)
 			ca.safe_crlf = GIT_SAFE_CRLF_WARN;
 	}
@@ -345,6 +345,8 @@ static void crlf_cleanup(
 git_filter *git_crlf_filter_new(void)
 {
 	struct crlf_filter *f = git__calloc(1, sizeof(struct crlf_filter));
+	if (f == NULL)
+		return NULL;
 
 	f->f.version = GIT_FILTER_VERSION;
 	f->f.attributes = "crlf eol text";

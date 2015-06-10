@@ -124,6 +124,11 @@ typedef enum {
 	/** Use case insensitive filename comparisons */
 	GIT_DIFF_IGNORE_CASE = (1u << 10),
 
+	/** May be combined with `GIT_DIFF_IGNORE_CASE` to specify that a file
+	 *  that has changed case will be returned as an add/delete pair.
+	 */
+	GIT_DIFF_INCLUDE_CASECHANGE = (1u << 11),
+
 	/** If the pathspec is set in the diff options, this flags means to
 	 *  apply it as an exact match instead of as an fnmatch pattern.
 	 */
@@ -220,7 +225,8 @@ typedef struct git_diff git_diff;
 typedef enum {
 	GIT_DIFF_FLAG_BINARY     = (1u << 0), /**< file(s) treated as binary data */
 	GIT_DIFF_FLAG_NOT_BINARY = (1u << 1), /**< file(s) treated as text data */
-	GIT_DIFF_FLAG_VALID_ID  = (1u << 2), /**< `id` value is known correct */
+	GIT_DIFF_FLAG_VALID_ID   = (1u << 2), /**< `id` value is known correct */
+	GIT_DIFF_FLAG_EXISTS     = (1u << 3), /**< file exists at this side of the delta */
 } git_diff_flag_t;
 
 /**
@@ -234,16 +240,17 @@ typedef enum {
  * DELETED pairs).
  */
 typedef enum {
-	GIT_DELTA_UNMODIFIED = 0, /**< no changes */
-	GIT_DELTA_ADDED = 1,	  /**< entry does not exist in old version */
-	GIT_DELTA_DELETED = 2,	  /**< entry does not exist in new version */
-	GIT_DELTA_MODIFIED = 3,   /**< entry content changed between old and new */
-	GIT_DELTA_RENAMED = 4,    /**< entry was renamed between old and new */
-	GIT_DELTA_COPIED = 5,     /**< entry was copied from another old entry */
-	GIT_DELTA_IGNORED = 6,    /**< entry is ignored item in workdir */
-	GIT_DELTA_UNTRACKED = 7,  /**< entry is untracked item in workdir */
-	GIT_DELTA_TYPECHANGE = 8, /**< type of entry changed between old and new */
-	GIT_DELTA_UNREADABLE = 9, /**< entry is unreadable */
+	GIT_DELTA_UNMODIFIED = 0,  /**< no changes */
+	GIT_DELTA_ADDED = 1,	   /**< entry does not exist in old version */
+	GIT_DELTA_DELETED = 2,	   /**< entry does not exist in new version */
+	GIT_DELTA_MODIFIED = 3,    /**< entry content changed between old and new */
+	GIT_DELTA_RENAMED = 4,     /**< entry was renamed between old and new */
+	GIT_DELTA_COPIED = 5,      /**< entry was copied from another old entry */
+	GIT_DELTA_IGNORED = 6,     /**< entry is ignored item in workdir */
+	GIT_DELTA_UNTRACKED = 7,   /**< entry is untracked item in workdir */
+	GIT_DELTA_TYPECHANGE = 8,  /**< type of entry changed between old and new */
+	GIT_DELTA_UNREADABLE = 9,  /**< entry is unreadable */
+	GIT_DELTA_CONFLICTED = 10, /**< entry in the index is conflicted */
 } git_delta_t;
 
 /**
@@ -377,8 +384,8 @@ typedef struct {
 
 	/* options controlling how to diff text is generated */
 
-	uint16_t    context_lines;    /**< defaults to 3 */
-	uint16_t    interhunk_lines;  /**< defaults to 0 */
+	uint32_t    context_lines;    /**< defaults to 3 */
+	uint32_t    interhunk_lines;  /**< defaults to 0 */
 	uint16_t    id_abbrev;       /**< default 'core.abbrev' or 7 if unset */
 	git_off_t   max_size;         /**< defaults to 512MB */
 	const char *old_prefix;       /**< defaults to "a" */
@@ -421,15 +428,14 @@ typedef int (*git_diff_file_cb)(
 /**
  * Structure describing a hunk of a diff.
  */
-typedef struct git_diff_hunk git_diff_hunk;
-struct git_diff_hunk {
+typedef struct {
 	int    old_start;     /**< Starting line number in old_file */
 	int    old_lines;     /**< Number of lines in old_file */
 	int    new_start;     /**< Starting line number in new_file */
 	int    new_lines;     /**< Number of lines in new_file */
 	size_t header_len;    /**< Number of bytes in header text */
 	char   header[128];   /**< Header text, NUL-byte terminated */
-};
+} git_diff_hunk;
 
 /**
  * When iterating over a diff, callback that will be made per hunk.
@@ -469,8 +475,7 @@ typedef enum {
 /**
  * Structure describing a line (or data span) of a diff.
  */
-typedef struct git_diff_line git_diff_line;
-struct git_diff_line {
+typedef struct {
 	char   origin;       /**< A git_diff_line_t value */
 	int    old_lineno;   /**< Line number in old file or -1 for added line */
 	int    new_lineno;   /**< Line number in new file or -1 for deleted line */
@@ -478,7 +483,7 @@ struct git_diff_line {
 	size_t content_len;  /**< Number of bytes of data */
 	git_off_t content_offset; /**< Offset in the original file to the content */
 	const char *content; /**< Pointer to diff text, not NUL-byte terminated */
-};
+} git_diff_line;
 
 /**
  * When iterating over a diff, callback that will be made per text diff
@@ -851,9 +856,9 @@ GIT_EXTERN(size_t) git_diff_num_deltas_of_type(
 /**
  * Return the diff delta for an entry in the diff list.
  *
- * The `git_delta` pointer points to internal data and you do not have
- * to release it when you are done with it.  It will go away when the
- * `git_diff` (or any associated `git_patch`) goes away.
+ * The `git_diff_delta` pointer points to internal data and you do not
+ * have to release it when you are done with it.  It will go away when
+ * the * `git_diff` (or any associated `git_patch`) goes away.
  *
  * Note that the flags on the delta related to whether it has binary
  * content or not may not be set if there are no attributes set for the

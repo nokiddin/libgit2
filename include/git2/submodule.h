@@ -10,6 +10,8 @@
 #include "common.h"
 #include "types.h"
 #include "oid.h"
+#include "remote.h"
+#include "checkout.h"
 
 /**
  * @file git2/submodule.h
@@ -106,6 +108,79 @@ typedef enum {
 	GIT_SUBMODULE_STATUS_WD_UNTRACKED)) != 0)
 
 /**
+ * Submodule update options structure
+ *
+ * Use the GIT_SUBMODULE_UPDATE_OPTIONS_INIT to get the default settings,
+ * like this:
+ *
+ * git_submodule_update_options opts = GIT_SUBMODULE_UPDATE_OPTIONS_INIT;
+ */
+typedef struct git_submodule_update_options {
+	unsigned int version;
+
+	/**
+	 * These options are passed to the checkout step. To disable
+	 * checkout, set the `checkout_strategy` to
+	 * `GIT_CHECKOUT_NONE`. Generally you will want the use
+	 * GIT_CHECKOUT_SAFE to update files in the working
+	 * directory. Use the `clone_checkout_strategy` field
+	 * to set the checkout strategy that will be used in
+	 * the case where update needs to clone the repository.
+	 */
+	git_checkout_options checkout_opts;
+
+	/**
+	 * Options which control the fetch, including callbacks.
+	 *
+	 * The callbacks to use for reporting fetch progress, and for acquiring
+	 * credentials in the event they are needed.
+	 */
+	git_fetch_options fetch_opts;
+
+	/**
+	 * The checkout strategy to use when the sub repository needs to
+	 * be cloned. Use GIT_CHECKOUT_SAFE to create all files
+	 * in the working directory for the newly cloned repository.
+	 */
+	unsigned int clone_checkout_strategy;
+} git_submodule_update_options;
+
+#define GIT_SUBMODULE_UPDATE_OPTIONS_VERSION 1
+#define GIT_SUBMODULE_UPDATE_OPTIONS_INIT \
+	{ GIT_CHECKOUT_OPTIONS_VERSION, \
+		{ GIT_CHECKOUT_OPTIONS_VERSION, GIT_CHECKOUT_SAFE }, \
+	GIT_FETCH_OPTIONS_INIT, GIT_CHECKOUT_SAFE }
+
+/**
+ * Initializes a `git_submodule_update_options` with default values.
+ * Equivalent to creating an instance with GIT_SUBMODULE_UPDATE_OPTIONS_INIT.
+ *
+ * @param opts The `git_submodule_update_options` instance to initialize.
+ * @param version Version of struct; pass `GIT_SUBMODULE_UPDATE_OPTIONS_VERSION`
+ * @return Zero on success; -1 on failure.
+ */
+GIT_EXTERN(int) git_submodule_update_init_options(
+	git_submodule_update_options *opts, unsigned int version);
+
+/**
+ * Update a submodule. This will clone a missing submodule and
+ * checkout the subrepository to the commit specified in the index of
+ * containing repository.
+ *
+ * @param submodule Submodule object
+ * @param init If the submodule is not initialized, setting this flag to true
+ *        will initialize the submodule before updating. Otherwise, this will
+ *        return an error if attempting to update an uninitialzed repository.
+ *        but setting this to true forces them to be updated.
+ * @param options configuration options for the update.  If NULL, the
+ *        function works as though GIT_SUBMODULE_UPDATE_OPTIONS_INIT was passed.
+ * @return 0 on success, any non-zero return value from a callback
+ *         function, or a negative value to indicate an error (use
+ *         `giterr_last` for a detailed error message).
+ */
+GIT_EXTERN(int) git_submodule_update(git_submodule *submodule, int init, git_submodule_update_options *options);
+
+/**
  * Lookup submodule information by name or path.
  *
  * Given either the submodule name or path (they are usually the same), this
@@ -148,7 +223,7 @@ GIT_EXTERN(void) git_submodule_free(git_submodule *submodule);
  * Iterate over all tracked submodules of a repository.
  *
  * See the note on `git_submodule` above.  This iterates over the tracked
- * submodules as decribed therein.
+ * submodules as described therein.
  *
  * If you are concerned about items in the working directory that look like
  * submodules but are not tracked, the diff API will generate a diff record
@@ -298,6 +373,22 @@ GIT_EXTERN(int) git_submodule_resolve_url(git_buf *out, git_repository *repo, co
 GIT_EXTERN(const char *) git_submodule_branch(git_submodule *submodule);
 
 /**
+ * Set the branch for the submodule.
+ *
+ * This sets the branch in memory for the submodule. This will be used for
+ * any following submodule actions while this submodule data is in memory.
+ *
+ * After calling this, you may wish to call `git_submodule_save()` to write
+ * the changes back to the ".gitmodules" file and `git_submodule_sync()` to
+ * write the changes to the checked out submodule repository.
+ *
+ * @param submodule Pointer to the submodule object
+ * @param branch Branch that should be used for the submodule
+ * @return 0 on success, <0 on failure
+ */
+GIT_EXTERN(int) git_submodule_set_branch(git_submodule *submodule, const char *branch);
+
+/**
  * Set the URL for the submodule.
  *
  * This sets the URL in memory for the submodule. This will be used for
@@ -403,7 +494,7 @@ GIT_EXTERN(git_submodule_ignore_t) git_submodule_set_ignore(
  * @return The current git_submodule_update_t value that will be used
  *         for this submodule.
  */
-GIT_EXTERN(git_submodule_update_t) git_submodule_update(
+GIT_EXTERN(git_submodule_update_t) git_submodule_update_strategy(
 	git_submodule *submodule);
 
 /**
@@ -469,6 +560,24 @@ GIT_EXTERN(git_submodule_recurse_t) git_submodule_set_fetch_recurse_submodules(
  * @return 0 on success, <0 on failure.
  */
 GIT_EXTERN(int) git_submodule_init(git_submodule *submodule, int overwrite);
+
+/**
+ * Set up the subrepository for a submodule in preparation for clone.
+ *
+ * This function can be called to init and set up a submodule
+ * repository from a submodule in preparation to clone it from
+ * its remote.
+ *
+ * @param out Output pointer to the created git repository.
+ * @param sm The submodule to create a new subrepository from.
+ * @param use_gitlink Should the workdir contain a gitlink to
+ *        the repo in .git/modules vs. repo directly in workdir.
+ * @return 0 on success, <0 on failure.
+ */
+GIT_EXTERN(int) git_submodule_repo_init(
+	git_repository **out,
+	const git_submodule *sm,
+	int use_gitlink);
 
 /**
  * Copy submodule remote info into submodule repo.

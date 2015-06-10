@@ -46,6 +46,7 @@ typedef enum {
 	GIT_STATUS_WT_UNREADABLE    = (1u << 12),
 
 	GIT_STATUS_IGNORED          = (1u << 14),
+	GIT_STATUS_CONFLICTED       = (1u << 15),
 } git_status_t;
 
 /**
@@ -281,7 +282,8 @@ GIT_EXTERN(int) git_status_foreach_ext(
  *
  * @param status_flags Output combination of git_status_t values for file
  * @param repo A repository object
- * @param path The file to retrieve status for relative to the repo workdir
+ * @param path The exact path to retrieve status for relative to the
+ * repository working directory
  * @return 0 on success, GIT_ENOTFOUND if the file is not found in the HEAD,
  *      index, and work tree, GIT_EAMBIGUOUS if `path` matches multiple files
  *      or if it refers to a folder, and -1 on other errors.

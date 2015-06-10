@@ -53,9 +53,6 @@ These are good small projects to get started with libgit2.
 * Submit a PR to clarify documentation! While we do try to document all of
   the APIs, your fresh eyes on the documentation will find areas that are
   confusing much more easily.
-* Add support for the symref protocol extension, so we don't guess
-  what the remote's default branch is
-  [#2006](https://github.com/libgit2/libgit2/issues/2006)
 
 If none of these appeal to you, take a look at our issues list to see if
 there are any unresolved issues you'd like to jump in on.
@@ -80,7 +77,6 @@ might make good smaller projects by themselves.
     * These tests could go in examples/tests/...
 * Fix symlink support for files in the .git directory (i.e. don't overwrite
   the symlinks when writing the file contents back out)
-* Implement a 'git describe' like API
 * Add hooks API to enumerate and manage hooks (not run them at this point)
     * Enumeration of available hooks
     * Lookup API to see which hooks have a script and get the script
@@ -91,19 +87,13 @@ might make good smaller projects by themselves.
 * Upgrade internal libxdiff code to latest from core Git
 * Improve index internals with hashtable lookup for files instead of
   using binary search every time
-* Make the index write the cache out to disk (with tests to gain
-  confidence that the caching invalidation works correctly)
 * Tree builder improvements:
-    * Use a hash table when building instead of a list
     * Extend to allow building a tree hierarchy
-* Move the tagopt mechanism to the newer git 1.9 interpretation of
-  --tags [#2120](https://github.com/libgit2/libgit2/issues/2120)
 * Apply-patch API
 * Add a patch editing API to enable "git add -p" type operations
 * Textconv API to filter binary data before generating diffs (something
   like the current Filter API, probably).
 * Performance profiling and improvement
-* Build in handling of "empty tree" and "empty blob" SHAs
 * Support "git replace" ref replacements
 * Include conflicts in diff results and in status
     * GIT_DELTA_CONFLICT for items in conflict (with multiple files)

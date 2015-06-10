@@ -12,12 +12,9 @@ git_tree *resolve_commit_oid_to_tree(
 	git_tree *tree = NULL;
 
 	if (git_oid_fromstrn(&oid, partial_oid, len) == 0)
-		git_object_lookup_prefix(&obj, repo, &oid, len, GIT_OBJ_ANY);
-	cl_assert(obj);
-	if (git_object_type(obj) == GIT_OBJ_TREE)
-		return (git_tree *)obj;
-	cl_assert(git_object_type(obj) == GIT_OBJ_COMMIT);
-	cl_git_pass(git_commit_tree(&tree, (git_commit *)obj));
+		cl_git_pass(git_object_lookup_prefix(&obj, repo, &oid, len, GIT_OBJ_ANY));
+
+	cl_git_pass(git_object_peel((git_object **) &tree, obj, GIT_OBJ_TREE));
 	git_object_free(obj);
 	return tree;
 }
@@ -71,7 +68,7 @@ int diff_file_cb(
 	if ((delta->flags & GIT_DIFF_FLAG_BINARY) != 0)
 		e->files_binary++;
 
-	cl_assert(delta->status <= GIT_DELTA_TYPECHANGE);
+	cl_assert(delta->status <= GIT_DELTA_CONFLICTED);
 
 	e->file_status[delta->status] += 1;
 

@@ -69,11 +69,12 @@ struct git_reference {
 git_reference *git_reference__set_name(git_reference *ref, const char *name);
 
 int git_reference__normalize_name(git_buf *buf, const char *name, unsigned int flags);
-int git_reference__update_terminal(git_repository *repo, const char *ref_name, const git_oid *oid, const git_signature *signature, const char *log_message);
+int git_reference__update_terminal(git_repository *repo, const char *ref_name, const git_oid *oid, const git_signature *sig, const char *log_message);
 int git_reference__is_valid_name(const char *refname, unsigned int flags);
 int git_reference__is_branch(const char *ref_name);
 int git_reference__is_remote(const char *ref_name);
 int git_reference__is_tag(const char *ref_name);
+const char *git_reference__shorthand(const char *name);
 
 /**
  * Lookup a reference by name and try to resolve to an OID.
@@ -97,5 +98,15 @@ int git_reference_lookup_resolved(
 	git_repository *repo,
 	const char *name,
 	int max_deref);
+
+int git_reference__log_signature(git_signature **out, git_repository *repo);
+
+/** Update a reference after a commit. */
+int git_reference__update_for_commit(
+	git_repository *repo,
+	git_reference *ref,
+	const char *ref_name,
+	const git_oid *id,
+	const char *operation);
 
 #endif
