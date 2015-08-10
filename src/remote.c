@@ -167,14 +167,18 @@ static int get_check_cert(int *out, git_repository *repo)
 
 static int canonicalize_url(git_buf *out, const char *in)
 {
-#ifdef GIT_WIN32
-	const char *c;
+	if (in == NULL || strlen(in) == 0) {
+		giterr_set(GITERR_INVALID, "cannot set empty URL");
+		return GIT_EINVALIDSPEC;
+	}
 
+#ifdef GIT_WIN32
 	/* Given a UNC path like \\server\path, we need to convert this
 	 * to //server/path for compatibility with core git.
 	 */
 	if (in[0] == '\\' && in[1] == '\\' &&
 		(git__isalpha(in[2]) || git__isdigit(in[2]))) {
+		const char *c;
 		for (c = in; *c; c++)
 			git_buf_putc(out, *c == '\\' ? '/' : *c);
 
@@ -981,7 +985,7 @@ int git_remote_fetch(
 
 	if (opts && opts->prune == GIT_FETCH_PRUNE)
 		prune = true;
-	else if (opts && opts->prune == GIT_FETCH_PRUNE_FALLBACK && remote->prune_refs)
+	else if (opts && opts->prune == GIT_FETCH_PRUNE_UNSPECIFIED && remote->prune_refs)
 		prune = true;
 	else if (opts && opts->prune == GIT_FETCH_NO_PRUNE)
 		prune = false;
@@ -1338,9 +1342,20 @@ static int update_tips_for_spec(
 			} else {
 				continue;
 			}
-		} else if (git_refspec_src_matches(spec, head->name) && spec->dst) {
-			if (git_refspec_transform(&refname, spec, head->name) < 0)
-				goto on_error;
+		} else if (git_refspec_src_matches(spec, head->name)) {
+			if (spec->dst) {
+				if (git_refspec_transform(&refname, spec, head->name) < 0)
+					goto on_error;
+			} else {
+				/*
+				 * no rhs mans store it in FETCH_HEAD, even if we don't
+				 update anything else.
+				 */
+				if ((error = git_vector_insert(&update_heads, head)) < 0)
+					goto on_error;
+
+				continue;
+			}
 		} else {
 			continue;
 		}
@@ -1535,7 +1550,7 @@ int git_remote_update_tips(
 	if ((error = ls_to_vector(&refs, remote)) < 0)
 		goto out;
 
-	if (download_tags == GIT_REMOTE_DOWNLOAD_TAGS_FALLBACK)
+	if (download_tags == GIT_REMOTE_DOWNLOAD_TAGS_UNSPECIFIED)
 		tagopt = remote->download_tags;
 	else
 		tagopt = download_tags;
