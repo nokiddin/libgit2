@@ -264,7 +264,6 @@ ENDIF()
 # Optional external dependency: libssh2
 IF (USE_SSH)
 	PKG_CHECK_MODULES(LIBSSH2 libssh2)
-ENDIF()
 IF (LIBSSH2_FOUND)
 	ADD_DEFINITIONS(-DGIT_SSH)
 	INCLUDE_DIRECTORIES(${LIBSSH2_INCLUDE_DIRS})
@@ -278,6 +277,7 @@ IF (LIBSSH2_FOUND)
 	ENDIF()
 ELSE()
 	MESSAGE(STATUS "LIBSSH2 not found. Set CMAKE_PREFIX_PATH if it is installed outside of the default search path.")
+ENDIF()
 ENDIF()
 
 # Optional external dependency: libgssapi
